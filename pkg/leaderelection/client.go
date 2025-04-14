@@ -45,8 +45,14 @@ func (c *Client) RegisterOnNew(callback func(currentID string, lockID string)) *
 }
 
 func (c *Client) Run(ctx context.Context) error {
-	k8sleaderelection.RunOrDie(ctx, k8sleaderelection.LeaderElectionConfig{
-		Lock:            c.createLock(),
+	k8sleaderelection.RunOrDie(ctx, c.CreateConfig())
+
+	return errors.New("leaderelection stopped")
+}
+
+func (c *Client) CreateConfig() k8sleaderelection.LeaderElectionConfig {
+	return k8sleaderelection.LeaderElectionConfig{
+		Lock:            c.CreateLock(),
 		ReleaseOnCancel: c.releaseOnCancel,
 		LeaseDuration:   c.leaseDuration,
 		RenewDeadline:   c.renewDeadline,
@@ -58,12 +64,10 @@ func (c *Client) Run(ctx context.Context) error {
 				c.onNewLeader(identity, c.identity)
 			},
 		},
-	})
-
-	return errors.New("leaderelection stopped")
+	}
 }
 
-func (c *Client) createLock() *resourcelock.LeaseLock {
+func (c *Client) CreateLock() *resourcelock.LeaseLock {
 	return &resourcelock.LeaseLock{
 		LeaseMeta: metav1.ObjectMeta{
 			Name:      c.lockName,

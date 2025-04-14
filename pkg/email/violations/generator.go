@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyverno/policy-reporter/pkg/crd/api/policyreport/v1alpha2"
-	api "github.com/kyverno/policy-reporter/pkg/crd/client/clientset/versioned/typed/policyreport/v1alpha2"
+	api "github.com/kyverno/policy-reporter/pkg/crd/client/policyreport/clientset/versioned/typed/policyreport/v1alpha2"
 	"github.com/kyverno/policy-reporter/pkg/email"
 )
 
@@ -68,7 +68,7 @@ func (o *Generator) GenerateData(ctx context.Context) ([]Source, error) {
 						continue
 					}
 
-					s.AddClusterResults(mapResult(result))
+					s.AddClusterResults(mapResult(&report, result))
 				}
 			}(rep)
 		}
@@ -117,7 +117,7 @@ func (o *Generator) GenerateData(ctx context.Context) ([]Source, error) {
 				if result.Result == v1alpha2.StatusPass || result.Result == v1alpha2.StatusSkip {
 					continue
 				}
-				s.AddNamespacedResults(report.Namespace, mapResult(result))
+				s.AddNamespacedResults(report.Namespace, mapResult(&report, result))
 			}
 		}(rep)
 	}

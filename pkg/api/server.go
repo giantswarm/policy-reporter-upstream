@@ -1,143 +1,125 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	pprof "net/http/pprof"
+	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
+	ginzap "github.com/gin-contrib/zap"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	v1 "github.com/kyverno/policy-reporter/pkg/api/v1"
-	"github.com/kyverno/policy-reporter/pkg/target"
 )
 
-// Server for the Lifecycle and optional HTTP REST API
-type Server interface {
-	// Start the HTTP Server
-	Start() error
-	// Shutdown the HTTP Sever
-	Shutdown(ctx context.Context) error
-	// RegisterLifecycleHandler adds healthy and readiness APIs
-	RegisterLifecycleHandler()
-	// RegisterMetricsHandler adds the optional metrics endpoint
-	RegisterMetricsHandler()
-	// RegisterV1Handler adds the optional v1 REST APIs
-	RegisterV1Handler(v1.PolicyReportFinder)
-	// RegisterProfilingHandler adds the optional pprof profiling APIs
-	RegisterProfilingHandler()
+type ServerOption func(s *Server) error
+
+type Handler interface {
+	Register(group *gin.RouterGroup) error
 }
 
-type httpServer struct {
-	http    http.Server
-	mux     *http.ServeMux
-	targets []target.Client
-	synced  func() bool
-	logger  *zap.Logger
+type BasicAuth struct {
+	Username string
+	Password string
 }
 
-func (s *httpServer) RegisterLifecycleHandler() {
-	s.mux.HandleFunc("/healthz", HealthzHandler(s.synced))
-	s.mux.HandleFunc("/ready", ReadyHandler(s.synced))
+type Server struct {
+	middleware []gin.HandlerFunc
+	engine     *gin.Engine
+	port       int
 }
 
-func (s *httpServer) RegisterV1Handler(finder v1.PolicyReportFinder) {
-	handler := v1.NewHandler(finder)
-
-	s.mux.HandleFunc("/v1/targets", Gzip(handler.TargetsHandler(s.targets)))
-	s.mux.HandleFunc("/v1/namespaces", Gzip(handler.NamespaceListHandler()))
-	s.mux.HandleFunc("/v1/rule-status-count", Gzip(handler.RuleStatusCountHandler()))
-
-	s.mux.HandleFunc("/v1/policy-reports", Gzip(handler.PolicyReportListHandler()))
-	s.mux.HandleFunc("/v1/cluster-policy-reports", Gzip(handler.ClusterPolicyReportListHandler()))
-
-	s.mux.HandleFunc("/v1/namespaced-resources/categories", Gzip(handler.NamespacedCategoryListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/policies", Gzip(handler.NamespacedResourcesPolicyListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/rules", Gzip(handler.NamespacedResourcesRuleListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/kinds", Gzip(handler.NamespacedResourcesKindListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/resources", Gzip(handler.NamespacedResourcesListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/sources", Gzip(handler.NamespacedSourceListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/report-labels", Gzip(handler.NamespacedReportLabelListHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/status-counts", Gzip(handler.NamespacedResourcesStatusCountsHandler()))
-	s.mux.HandleFunc("/v1/namespaced-resources/results", Gzip(handler.NamespacedResourcesResultHandler()))
-
-	s.mux.HandleFunc("/v1/cluster-resources/policies", Gzip(handler.ClusterResourcesPolicyListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/rules", Gzip(handler.ClusterResourcesRuleListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/kinds", Gzip(handler.ClusterResourcesKindListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/resources", Gzip(handler.ClusterResourcesListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/sources", Gzip(handler.ClusterResourcesSourceListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/report-labels", Gzip(handler.ClusterReportLabelListHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/status-counts", Gzip(handler.ClusterResourcesStatusCountHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/results", Gzip(handler.ClusterResourcesResultHandler()))
-	s.mux.HandleFunc("/v1/cluster-resources/categories", Gzip(handler.ClusterCategoryListHandler()))
+func (s *Server) Start() error {
+	return s.engine.Run(fmt.Sprintf(":%d", s.port))
 }
 
-func (s *httpServer) RegisterMetricsHandler() {
-	s.mux.Handle("/metrics", promhttp.Handler())
+func (s *Server) Serve(w http.ResponseWriter, req *http.Request) {
+	s.engine.ServeHTTP(w, req)
 }
 
-func (s *httpServer) RegisterProfilingHandler() {
-	s.mux.HandleFunc("/debug/pprof/", pprof.Index)
-	s.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+func (s *Server) Register(path string, handler Handler) error {
+	return handler.Register(s.engine.Group(path, s.middleware...))
 }
 
-func (s *httpServer) Start() error {
-	return s.http.ListenAndServe()
-}
-
-func (s *httpServer) Shutdown(ctx context.Context) error {
-	return s.http.Shutdown(ctx)
-}
-
-// NewServer constructor for a new API Server
-func NewServer(targets []target.Client, port int, logger *zap.Logger, synced func() bool) Server {
-	mux := http.NewServeMux()
-
-	s := &httpServer{
-		targets: targets,
-		synced:  synced,
-		mux:     mux,
-		logger:  logger,
-		http: http.Server{
-			Addr:    fmt.Sprintf(":%d", port),
-			Handler: NewLoggerMiddleware(logger, mux),
-		},
+func NewServer(engine *gin.Engine, options ...ServerOption) *Server {
+	server := &Server{
+		engine: engine,
+		port:   8080,
 	}
 
-	s.RegisterLifecycleHandler()
-
-	return s
-}
-
-func NewLoggerMiddleware(logger *zap.Logger, mux http.Handler) http.Handler {
-	if logger == nil {
-		return mux
+	for _, opt := range options {
+		if err := opt(server); err != nil {
+			zap.L().Error("failed to apply server function", zap.Error(err))
+		}
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields := []zapcore.Field{
-			zap.String("proto", r.Proto),
-			zap.String("user-agent", r.Header.Get("User-Agent")),
-			zap.String("path", r.URL.Path),
-		}
+	return server
+}
 
-		if query := r.URL.RawQuery; query != "" {
-			fields = append(fields, zap.String("query", query))
-		}
-		if ref := r.Header.Get("Referer"); ref != "" {
-			fields = append(fields, zap.String("referer", ref))
-		}
-		if scheme := r.URL.Scheme; scheme != "" {
-			fields = append(fields, zap.String("scheme", scheme))
-		}
+func WithBasicAuth(auth BasicAuth) ServerOption {
+	return func(s *Server) error {
+		s.middleware = append(s.middleware, gin.BasicAuth(gin.Accounts{
+			auth.Username: auth.Password,
+		}))
 
-		logger.Debug("Serve", fields...)
+		return nil
+	}
+}
 
-		mux.ServeHTTP(w, r)
-	})
+func WithHealthChecks(checks []HealthCheck) ServerOption {
+	return func(s *Server) error {
+		s.engine.GET("healthz", HealthzHandler(checks))
+		s.engine.GET("ready", HealthzHandler(checks))
+
+		return nil
+	}
+}
+
+func WithLogging(logger *zap.Logger) ServerOption {
+	return func(s *Server) error {
+		s.engine.Use(ginzap.Ginzap(logger, time.RFC3339, true))
+		s.engine.Use(ginzap.RecoveryWithZap(logger, true))
+
+		return nil
+	}
+}
+
+func WithGZIP() ServerOption {
+	return func(s *Server) error {
+		s.engine.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/metrics"})))
+
+		return nil
+	}
+}
+
+func WithRecovery() ServerOption {
+	return func(s *Server) error {
+		s.engine.Use(gin.Recovery())
+
+		return nil
+	}
+}
+
+func WithPort(port int) ServerOption {
+	return func(s *Server) error {
+		s.port = port
+
+		return nil
+	}
+}
+
+func WithProfiling() ServerOption {
+	return func(s *Server) error {
+		pprof.Register(s.engine)
+
+		return nil
+	}
+}
+
+func WithMetrics() ServerOption {
+	return func(s *Server) error {
+		s.engine.GET("metrics", append(s.middleware, MetricsHandler())...)
+
+		return nil
+	}
 }

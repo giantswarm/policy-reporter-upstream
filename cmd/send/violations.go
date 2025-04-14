@@ -75,8 +75,14 @@ func NewViolationsCMD() *cobra.Command {
 					return
 				}
 
-				logger.Sugar().Infof("email sent to %s\n", strings.Join(c.EmailReports.Summary.To, ", "))
+				logger.Sugar().Infof("email sent to %s\n", strings.Join(c.EmailReports.Violations.To, ", "))
 			}()
+
+			nsclient, err := resolver.NamespaceClient()
+			if err != nil {
+				logger.Error("failed to get namespace client", zap.Error(err))
+				return err
+			}
 
 			for _, ch := range c.EmailReports.Violations.Channels {
 				go func(channel config.EmailReport) {
@@ -87,7 +93,7 @@ func NewViolationsCMD() *cobra.Command {
 						return
 					}
 
-					sources := violations.FilterSources(data, config.EmailReportFilterFromConfig(channel.Filter), !channel.Filter.DisableClusterReports)
+					sources := violations.FilterSources(data, config.EmailReportFilterFromConfig(nsclient, channel.Filter), !channel.Filter.DisableClusterReports)
 					if len(sources) == 0 {
 						logger.Info("skip email - no results to send")
 						return

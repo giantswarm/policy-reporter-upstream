@@ -68,6 +68,16 @@ func (r *ClusterPolicyReport) GetResults() []PolicyReportResult {
 	return r.Results
 }
 
+func (r *ClusterPolicyReport) HasResult(id string) bool {
+	for _, r := range r.Results {
+		if r.GetID() == id {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (r *ClusterPolicyReport) SetResults(results []PolicyReportResult) {
 	r.Results = results
 }
@@ -91,7 +101,15 @@ func (r *ClusterPolicyReport) GetID() string {
 	return strconv.FormatUint(h1, 10)
 }
 
+func (r *ClusterPolicyReport) GetKey() string {
+	return r.Name
+}
+
 func (r *ClusterPolicyReport) GetKinds() []string {
+	if r.GetScope() != nil {
+		return []string{r.Scope.Kind}
+	}
+
 	list := make([]string, 0)
 	for _, k := range r.Results {
 		if !k.HasResource() {

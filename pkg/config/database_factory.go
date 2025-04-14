@@ -14,6 +14,7 @@ import (
 	"github.com/uptrace/bun/dialect/mysqldialect"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/extra/bundebug"
 	"go.uber.org/zap"
 
 	"github.com/kyverno/policy-reporter/pkg/database"
@@ -51,7 +52,10 @@ func (f *DatabaseFactory) NewPostgres(config Database) *bun.DB {
 	sqldb.SetMaxIdleConns(25)
 	sqldb.SetConnMaxLifetime(15 * time.Minute)
 
-	return bun.NewDB(sqldb, pgdialect.New())
+	db := bun.NewDB(sqldb, pgdialect.New())
+	db.AddQueryHook(bundebug.NewQueryHook())
+
+	return db
 }
 
 func (f *DatabaseFactory) NewMySQL(config Database) *bun.DB {
@@ -87,6 +91,8 @@ func (f *DatabaseFactory) NewSQLite(file string) *bun.DB {
 		zap.L().Error("failed to create sqlite connection", zap.Error(err))
 		return nil
 	}
+
+	sqldb.AddQueryHook(bundebug.NewQueryHook())
 
 	return sqldb
 }

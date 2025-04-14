@@ -25,7 +25,7 @@ type k8sPolicyReportClient struct {
 	metaClient   metadata.Interface
 	synced       bool
 	mx           *sync.Mutex
-	reportFilter *report.Filter
+	reportFilter *report.MetaFilter
 	stopChan     chan struct{}
 }
 
@@ -60,20 +60,18 @@ func (k *k8sPolicyReportClient) Sync(stopper chan struct{}) error {
 
 	k.synced = true
 
-	zap.L().Info("informer sync completed")
+	zap.L().Info("policy report informer sync completed")
 
 	return nil
 }
 
 func (k *k8sPolicyReportClient) Run(worker int, stopper chan struct{}) error {
 	k.stopChan = stopper
-
 	if err := k.Sync(stopper); err != nil {
 		return err
 	}
 
 	k.queue.Run(worker, stopper)
-
 	return nil
 }
 
@@ -110,7 +108,7 @@ func (k *k8sPolicyReportClient) configureInformer(informer cache.SharedIndexInfo
 }
 
 // NewPolicyReportClient new Client for Policy Report Kubernetes API
-func NewPolicyReportClient(metaClient metadata.Interface, reportFilter *report.Filter, queue *Queue) report.PolicyReportClient {
+func NewPolicyReportClient(metaClient metadata.Interface, reportFilter *report.MetaFilter, queue *Queue) report.PolicyReportClient {
 	return &k8sPolicyReportClient{
 		metaClient:   metaClient,
 		mx:           &sync.Mutex{},

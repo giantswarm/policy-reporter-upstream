@@ -5,8 +5,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
+	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -15,14 +16,14 @@ import (
 )
 
 // CreateJSONRequest for the given configuration
-func CreateJSONRequest(target, method, host string, payload interface{}) (*http.Request, error) {
+func CreateJSONRequest(method, host string, payload interface{}) (*http.Request, error) {
 	body := new(bytes.Buffer)
 
 	json.NewEncoder(body).Encode(payload)
 
 	req, err := http.NewRequest(method, host, body)
 	if err != nil {
-		zap.L().Error(target+": PUSH FAILED", zap.Error(err))
+		zap.L().Error("failed to create request", zap.Error(err))
 		return nil, err
 	}
 
@@ -67,7 +68,6 @@ func NewJSONResult(r v1alpha2.PolicyReportResult) Result {
 		Message:           r.Message,
 		Policy:            r.Policy,
 		Rule:              r.Rule,
-		Priority:          r.Priority.String(),
 		Status:            string(r.Result),
 		Severity:          string(r.Severity),
 		Category:          r.Category,
@@ -80,17 +80,28 @@ func NewJSONResult(r v1alpha2.PolicyReportResult) Result {
 }
 
 func NewClient(certificatePath string, skipTLS bool) *http.Client {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: skipTLS,
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 60 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: skipTLS,
+		},
+		Proxy: http.ProxyFromEnvironment,
 	}
 
 	client := &http.Client{
-		Transport: transport,
+		Transport: NewLoggingRoundTripper(transport),
+		Timeout:   30 * time.Second,
 	}
 
 	if certificatePath != "" {
-		caCert, err := ioutil.ReadFile(certificatePath)
+		caCert, err := os.ReadFile(certificatePath)
 		if err != nil {
 			zap.L().Error("failed to read certificate", zap.String("path", certificatePath))
 			return client

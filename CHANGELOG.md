@@ -1,5 +1,157 @@
 # Changelog
 
+# 2.24.2
+* Policy Reporter v2.20.2
+    * Fix LeaderElection without configurared pushes
+
+# 2.24.1
+* Policy Reporter v2.20.1
+    * Propagate Slack channel Override [[#459](https://github.com/kyverno/policy-reporter/pull/459)] [[#460](https://github.com/kyverno/policy-reporter/pull/460)] by [jescarri](https://github.com/jescarri)
+
+# 2.24.0
+* Helm Chart
+    * GrafanaDashboard configuration [[#441](https://github.com/kyverno/policy-reporter/pull/441) by [nlamirault](https://github.com/nlamirault)]
+    * Added support of sidecars and extraManifests [[#439](https://github.com/kyverno/policy-reporter/pull/439) by [wbmillogo](https://github.com/wbmillogo)]
+    * Policy Reporter v2.20.0
+        * fix(S3): Make `bucket` for S3 targets mendatory and don't show error logs if WebIdentity is used.
+        * fix(email): Fix violations "email sent to" log [[#444](https://github.com/kyverno/policy-reporter/pull/444) by [cosimomeli](https://github.com/cosimomeli)]
+        * feature(SecurityHub): fix product name field and allow to set company name [[#446](https://github.com/kyverno/policy-reporter/pull/446) by [balonik](https://github.com/balonik)]
+        * feature(AWS): recognize if AWS Pod Identity is present [[#452](https://github.com/kyverno/policy-reporter/pull/452) by [balonik](https://github.com/balonik)]
+        * feature(metrics); Add kind attribute in the Metrics filter [[#442](https://github.com/kyverno/policy-reporter/pull/442) by [abdul-jabbar01](https://github.com/abdul-jabbar01)]
+        * docs: point to ui subchart's values.yaml [[#450](https://github.com/kyverno/policy-reporter/pull/450) by [ustuehler](https://github.com/ustuehler)]
+
+# 2.23.1
+* Helm Chart
+    * Update AppVersion in `values.yaml`
+
+# 2.23.0
+* Helm Chart
+    * fix: use /healthz for liveness and /ready for readiness [[#435](https://github.com/kyverno/policy-reporter/pull/435) by [rsicart](https://github.com/rsicart)]
+    * Policy Reporter v2.19.0
+        * New HTML Report API `/v1/html-report/violations`
+        * CleanUp Listener for AWS SecurityHub
+        * SourcConfig enables a custom ID generation logic per source
+        * Deprecated PriorityMapping is removed, its recommanded to configure it via Severity
+        * Support Workload Identity for GoogleCloudStorage target
+
+# 2.22.5
+* Helm Chart
+    * fix(helm): correct typo when using global.annotations [[#420](https://github.com/kyverno/policy-reporter/pull/420) by [ThomasLachaux](https://github.com/ThomasLachaux)]
+    * Policy Reporter v2.18.2
+        * Add support for custom headers for the Loki target
+        * Depdency Updates
+        * Upgrade to Go v1.22
+
+# 2.22.4
+* Helm Chart
+    * fix(helm): mapping of headers properties to from values.yaml to config.yaml
+
+# 2.22.3
+* Helm Chart
+    * fix(helm): typo in email report config [[#413](https://github.com/kyverno/policy-reporter/pull/413) by [sudoleg](https://github.com/sudoleg)]
+
+# 2.22.2
+* Helm Chart
+    * Policy Reporter v2.18.1
+        * Fix Resource Mapping in Violation Report E-Mails
+
+# 2.22.1
+* Helm Chart
+    * Fix indentation in SummaryReport CronJob
+
+# 2.22.0
+* Helm Chart
+    * Policy Reporter v2.18.0
+        * Support HTTP BasicAuth for Loki [[#394](https://github.com/kyverno/policy-reporter/pull/394) by [YannickTeKulve](https://github.com/YannickTeKulve)]
+        * Update README Targets and Links [[#396](https://github.com/kyverno/policy-reporter/pull/396) by [vponoikoait](https://github.com/vponoikoait)]
+        * AccoundID for SecurityHub is now optional if IRSA is used.
+        * Removed unused from config.yaml. Stream name isn't a property of SecurityHub [[#403](https://github.com/kyverno/policy-reporter/pull/403) by [vponoikoait](https://github.com/vponoikoait)]
+        * Support `certificate` and `skipTLS` configuration for SMTP Client configuration.
+    * Policy Reporter Kyverno Plugin v1.6.3
+        * Fix HTML Report Details
+    * Monitoring Chart
+        * Add Rule filter to Grafana PolicyReport Details Dashboard [[#399](https://github.com/kyverno/policy-reporter/pull/399) by [lukashankeln](https://github.com/lukashankeln)]
+
+# 2.21.6
+* Helm Chart
+    * Policy Reporter v2.17.5
+        * Compatibility with elasticSearch typeless API [[#387](https://github.com/kyverno/policy-reporter/pull/387) by [guipal](https://github.com/guipal)]
+        * Allow labels to be set on ingress [[#392](https://github.com/kyverno/policy-reporter/pull/392) by [jseiser](https://github.com/jseiser)]
+        * Dependency Updates
+    * Policy Reporter UI v1.9.2
+        * Dependency Updates
+        * Fix Result Message Space in PolicyReportResults Table
+    * Policy Reporter Kyverno Plugin v1.6.2
+        * Dependency Updates
+
+# 2.21.5
+* Helm Chart
+    * Policy Reporter UI
+        * Add `annotations` UI values to UI deployment
+    * Policy Reporter
+        * Add `/tmp` volume for SQLite [[#380](https://github.com/kyverno/policy-reporter/pull/380) by [mikebryant](https://github.com/mikebryant)]
+
+# 2.21.4
+* Helm Chart
+    * Allow additional env variables to be added [[#378](https://github.com/kyverno/policy-reporter/pull/378) by [kbcbals](https://github.com/kbcbals)]
+
+# 2.21.3
+* Policy Reporter v2.17.4
+    * Fix Result Resource mapping
+* Policy Reporter v2.17.3
+    * Fix handling if metric cache fallback
+* Helm Chart
+    * Configure `resources` for email report CronJobs via `emailReports.resources`
+
+# 2.21.2
+* Policy Reporter v2.17.2
+    * Fix ID generation for PolicyReportResults which using `scope` as resource reference
+    * Add optional `message` metric label
+* Helm Chart
+    * fix: Add chart parameters for setting `revisionHistoryLimit` [[#363](https://github.com/kyverno/policy-reporter/pull/363) by [bodgit](https://github.com/bodgit)]
+    * fix: allow not setting `.Values.podSecurityContext` for kyvernoPlugin [[#361](https://github.com/kyverno/policy-reporter/pull/361) by [haraldsk](https://github.com/haraldsk)]
+
+# 2.21.1
+* Helm Chart
+    * Use correct namespace label based on the `monitoring.serviceMonitor.honorLabels` configuration in all Dashboards
+
+# 2.21.0
+* Policy Reporter
+    * Migrate to AWS SDK v2
+    * Dependency Update
+    * Create Roles/ Rolebindings when service account is not managed [[#348](https://github.com/kyverno/policy-reporter/pull/348) by [josqu4red](https://github.com/josqu4red)]
+* Policy Reporter UI
+    * Update GO dependencies
+* Policy Reporter Kyverno Plugin
+    * Update GO dependencies
+
+# 2.20.1
+* Policy Reporter
+    * fix: scope kind mapping
+    * feat: add debug http logging [[#346](https://github.com/kyverno/policy-reporter/pull/346) by [blakepettersson](https://github.com/blakepettersson)]
+    * build: cache go mod [[#345](https://github.com/kyverno/policy-reporter/pull/345) by [blakepettersson](https://github.com/blakepettersson)]
+
+# 2.20.1
+* Policy Reporter
+    * Support GoogleChat as new notification target
+    * Support Telegram as new notification target
+    * Support HTTP BasicAuth for API and metrics
+    * Go update to v1.21
+* Policy Reporter UI
+    * Support HTTP BasicAuth authenticated API calls
+    * Go update to v1.21
+* Policy Reporter KyvernoPlugin
+    * Support HTTP BasicAuth for API and metrics
+    * Go update to v1.21
+
+# 2.19.4
+* Helm Chart
+    * Fix ingress TLS rendering
+# 2.19.3
+* Helm Chart
+    * Fix Ingress TLS block [[#317](https://github.com/kyverno/policy-reporter/pull/317) by [rufusnufus](https://github.com/rufusnufus)]
+    * Make inverval and scrapeTimeout configurable on ServiceMonitors [[#318](https://github.com/kyverno/policy-reporter/pull/318) by [fhielpos](https://github.com/fhielpos)]
+
 # 2.19.2
 * Policy Reporter
     * Fix mapping of `mountedSecret` for all missing targets
@@ -157,7 +309,7 @@
 * Policy Reporter
     * New `certificate` config for `loki`, `elasticsearch`, `teams`, `webhook` and `ui`, to set the path to your custom certificate for the related client.
     * New `skipTLS` config for `loki`, `elasticsearch`, `teams`, `webhook` and `ui`, to skip tls if needed for the given target.
-    * New `secretRef` for targets to reference a secret with the related `username`, `password`, `webhook`, `host`, `accessKeyID`, `secretAccessKey` information of the given target, instead of configure your credentials directly.
+    * New `secretRef` for targets to reference a secret with the related `username`, `password`, `webhook`, `host`, `accessKeyId`, `secretAccessKey` information of the given target, instead of configure your credentials directly.
 * Policy Reporter UI
     * New value `refreshInterval` to configure the default refresh interval for API polling. Set `0` to disable polling.
 * Policy Reporter Kyverno Plugin

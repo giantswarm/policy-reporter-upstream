@@ -1,8 +1,11 @@
 package config
 
+import "github.com/kyverno/policy-reporter/pkg/target"
+
 type ValueFilter struct {
-	Include []string `mapstructure:"include"`
-	Exclude []string `mapstructure:"exclude"`
+	Include  []string       `mapstructure:"include"`
+	Exclude  []string       `mapstructure:"exclude"`
+	Selector map[string]any `mapstructure:"selector"`
 }
 
 type EmailReportFilter struct {
@@ -24,141 +27,19 @@ type MetricsFilter struct {
 	Severities ValueFilter `mapstructure:"severities"`
 	Status     ValueFilter `mapstructure:"status"`
 	Sources    ValueFilter `mapstructure:"sources"`
-}
-
-type TargetBaseOptions struct {
-	Name            string            `mapstructure:"name"`
-	MinimumPriority string            `mapstructure:"minimumPriority"`
-	Filter          TargetFilter      `mapstructure:"filter"`
-	SecretRef       string            `mapstructure:"secretRef"`
-	MountedSecret   string            `mapstructure:"mountedSecret"`
-	Sources         []string          `mapstructure:"sources"`
-	CustomFields    map[string]string `mapstructure:"customFields"`
-	SkipExisting    bool              `mapstructure:"skipExistingOnStartup"`
-}
-
-// Loki configuration
-type Loki struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	CustomLabels      map[string]string `mapstructure:"customLabels"`
-	Host              string            `mapstructure:"host"`
-	SkipTLS           bool              `mapstructure:"skipTLS"`
-	Certificate       string            `mapstructure:"certificate"`
-	Path              string            `mapstructure:"path"`
-	Channels          []Loki            `mapstructure:"channels"`
-}
-
-// Elasticsearch configuration
-type Elasticsearch struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Host              string          `mapstructure:"host"`
-	SkipTLS           bool            `mapstructure:"skipTLS"`
-	Certificate       string          `mapstructure:"certificate"`
-	Index             string          `mapstructure:"index"`
-	Rotation          string          `mapstructure:"rotation"`
-	Username          string          `mapstructure:"username"`
-	Password          string          `mapstructure:"password"`
-	Channels          []Elasticsearch `mapstructure:"channels"`
-}
-
-// Slack configuration
-type Slack struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Webhook           string  `mapstructure:"webhook"`
-	Channel           string  `mapstructure:"channel"`
-	Channels          []Slack `mapstructure:"channels"`
-}
-
-// Discord configuration
-type Discord struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Webhook           string    `mapstructure:"webhook"`
-	Channels          []Discord `mapstructure:"channels"`
-}
-
-// Teams configuration
-type Teams struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Webhook           string  `mapstructure:"webhook"`
-	SkipTLS           bool    `mapstructure:"skipTLS"`
-	Certificate       string  `mapstructure:"certificate"`
-	Channels          []Teams `mapstructure:"channels"`
-}
-
-// UI configuration
-type UI struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Host              string `mapstructure:"host"`
-	SkipTLS           bool   `mapstructure:"skipTLS"`
-	Certificate       string `mapstructure:"certificate"`
-}
-
-// Webhook configuration
-type Webhook struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Host              string            `mapstructure:"host"`
-	SkipTLS           bool              `mapstructure:"skipTLS"`
-	Certificate       string            `mapstructure:"certificate"`
-	Headers           map[string]string `mapstructure:"headers"`
-	Channels          []Webhook         `mapstructure:"channels"`
-}
-
-// S3 configuration
-type S3 struct {
-	TargetBaseOptions    `mapstructure:",squash"`
-	AccessKeyID          string `mapstructure:"accessKeyID"`
-	SecretAccessKey      string `mapstructure:"secretAccessKey"`
-	Region               string `mapstructure:"region"`
-	Endpoint             string `mapstructure:"endpoint"`
-	Prefix               string `mapstructure:"prefix"`
-	Bucket               string `mapstructure:"bucket"`
-	BucketKeyEnabled     bool   `mapstructure:"bucketKeyEnabled"`
-	KmsKeyID             string `mapstructure:"kmsKeyId"`
-	ServerSideEncryption string `mapstructure:"serverSideEncryption"`
-	PathStyle            bool   `mapstructure:"pathStyle"`
-	Channels             []S3   `mapstructure:"channels"`
-}
-
-// Kinesis configuration
-type Kinesis struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	AccessKeyID       string    `mapstructure:"accessKeyID"`
-	SecretAccessKey   string    `mapstructure:"secretAccessKey"`
-	Region            string    `mapstructure:"region"`
-	Endpoint          string    `mapstructure:"endpoint"`
-	StreamName        string    `mapstructure:"streamName"`
-	Channels          []Kinesis `mapstructure:"channels"`
-}
-
-// SecurityHub configuration
-type SecurityHub struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	AccountID         string        `mapstructure:"accountId"`
-	AccessKeyID       string        `mapstructure:"accessKeyID"`
-	SecretAccessKey   string        `mapstructure:"secretAccessKey"`
-	Region            string        `mapstructure:"region"`
-	Endpoint          string        `mapstructure:"endpoint"`
-	Channels          []SecurityHub `mapstructure:"channels"`
-}
-
-// GCS configuration
-type GCS struct {
-	TargetBaseOptions `mapstructure:",squash"`
-	Credentials       string   `mapstructure:"credentials"`
-	Prefix            string   `mapstructure:"prefix"`
-	Bucket            string   `mapstructure:"bucket"`
-	Sources           []string `mapstructure:"sources"`
-	Channels          []GCS    `mapstructure:"channels"`
+	Kinds      ValueFilter `mapstructure:"kinds"`
 }
 
 // SMTP configuration
 type SMTP struct {
-	Host       string `mapstructure:"host"`
-	Port       int    `mapstructure:"port"`
-	Username   string `mapstructure:"username"`
-	Password   string `mapstructure:"password"`
-	From       string `mapstructure:"from"`
-	Encryption string `mapstructure:"encryption"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password"`
+	From        string `mapstructure:"from"`
+	Encryption  string `mapstructure:"encryption"`
+	SkipTLS     bool   `mapstructure:"skipTLS"`
+	Certificate string `mapstructure:"certificate"`
 }
 
 // EmailReport configuration
@@ -170,23 +51,31 @@ type EmailReport struct {
 }
 
 // EmailReport configuration
-type EmailTemplates struct {
+type Templates struct {
 	Dir string `mapstructure:"dir"`
 }
 
 // EmailReports configuration
 type EmailReports struct {
-	SMTP        SMTP           `mapstructure:"smtp"`
-	Templates   EmailTemplates `mapstructure:"templates"`
-	Summary     EmailReport    `mapstructure:"summary"`
-	Violations  EmailReport    `mapstructure:"violations"`
-	ClusterName string         `mapstructure:"clusterName"`
+	SMTP        SMTP        `mapstructure:"smtp"`
+	Summary     EmailReport `mapstructure:"summary"`
+	Violations  EmailReport `mapstructure:"violations"`
+	ClusterName string      `mapstructure:"clusterName"`
+	TitlePrefix string      `mapstructure:"titlePrefix"`
+}
+
+// BasicAuth configuration
+type BasicAuth struct {
+	Username  string `mapstructure:"username"`
+	Password  string `mapstructure:"password"`
+	SecretRef string `mapstructure:"secretRef"`
 }
 
 // API configuration
 type API struct {
-	Port    int  `mapstructure:"port"`
-	Logging bool `mapstructure:"logging"`
+	Port      int       `mapstructure:"port"`
+	BasicAuth BasicAuth `mapstructure:"basicAuth"`
+	DebugMode bool      `mapstructure:"debug"`
 }
 
 // REST configuration
@@ -207,18 +96,12 @@ type Profiling struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// PriorityMap configuration
-type PriorityMap = map[string]string
-
-// ClusterReportFilter configuration
-type ClusterReportFilter struct {
-	Disabled bool `mapstructure:"disabled"`
-}
-
 // ReportFilter configuration
 type ReportFilter struct {
-	Namespaces     ValueFilter         `mapstructure:"namespaces"`
-	ClusterReports ClusterReportFilter `mapstructure:"clusterReports"`
+	Namespaces            ValueFilter `mapstructure:"namespaces"`
+	Sources               ValueFilter `mapstructure:"sources"`
+	Kinds                 ValueFilter `mapstructure:"kinds"`
+	DisableClusterReports bool        `mapstructure:"disableClusterReports"`
 }
 
 // Redis configuration
@@ -251,6 +134,7 @@ type K8sClient struct {
 }
 
 type Logging struct {
+	Server      bool   `mapstructure:"server"`
 	LogLevel    int8   `mapstructure:"logLevel"`
 	Encoding    string `mapstructure:"encoding"`
 	Development bool   `mapstructure:"development"`
@@ -268,28 +152,44 @@ type Database struct {
 	MountedSecret string `mapstructure:"mountedSecret"`
 }
 
+type SourceSelector struct {
+	Source string `mapstructure:"source"`
+}
+
+type SourceFilter struct {
+	Selector              SourceSelector `mapstructure:"selector"`
+	Kinds                 ValueFilter    `mapstructure:"kinds"`
+	Sources               ValueFilter    `mapstructure:"sources"`
+	Namespaces            ValueFilter    `mapstructure:"namespaces"`
+	UncontrolledOnly      bool           `mapstructure:"uncontrolledOnly"`
+	DisableClusterReports bool           `mapstructure:"disableClusterReports"`
+}
+
+type CustomID struct {
+	Enabled bool     `mapstructure:"enabled"`
+	Fields  []string `mapstructure:"fields"`
+}
+
+type SourceConfig struct {
+	Selector SourceSelector `mapstructure:"selector"`
+	CustomID `mapstructure:"customId"`
+}
+
+type CRD struct {
+	TargetConfig bool `mapstructure:"targetConfig"`
+}
+
 // Config of the PolicyReporter
 type Config struct {
 	Version        string
 	Namespace      string         `mapstructure:"namespace"`
-	Loki           Loki           `mapstructure:"loki"`
-	Elasticsearch  Elasticsearch  `mapstructure:"elasticsearch"`
-	Slack          Slack          `mapstructure:"slack"`
-	Discord        Discord        `mapstructure:"discord"`
-	Teams          Teams          `mapstructure:"teams"`
-	S3             S3             `mapstructure:"s3"`
-	Kinesis        Kinesis        `mapstructure:"kinesis"`
-	SecurityHub    SecurityHub    `mapstructure:"securityHub"`
-	GCS            GCS            `mapstructure:"gcs"`
-	UI             UI             `mapstructure:"ui"`
-	Webhook        Webhook        `mapstructure:"webhook"`
 	API            API            `mapstructure:"api"`
 	WorkerCount    int            `mapstructure:"worker"`
 	DBFile         string         `mapstructure:"dbfile"`
 	Metrics        Metrics        `mapstructure:"metrics"`
 	REST           REST           `mapstructure:"rest"`
-	PriorityMap    PriorityMap    `mapstructure:"priorityMap"`
 	ReportFilter   ReportFilter   `mapstructure:"reportFilter"`
+	SourceFilters  []SourceFilter `mapstructure:"sourceFilters"`
 	Redis          Redis          `mapstructure:"redis"`
 	Profiling      Profiling      `mapstructure:"profiling"`
 	EmailReports   EmailReports   `mapstructure:"emailReports"`
@@ -297,4 +197,8 @@ type Config struct {
 	K8sClient      K8sClient      `mapstructure:"k8sClient"`
 	Logging        Logging        `mapstructure:"logging"`
 	Database       Database       `mapstructure:"database"`
+	Targets        target.Targets `mapstructure:"target"`
+	SourceConfig   []SourceConfig `mapstructure:"sourceConfig"`
+	Templates      Templates      `mapstructure:"templates"`
+	CRD            CRD            `mapstructure:"crd"`
 }

@@ -3,14 +3,14 @@ package violations_test
 import (
 	"go.uber.org/zap"
 
-	"github.com/kyverno/policy-reporter/pkg/crd/client/clientset/versioned/fake"
-	v1alpha2client "github.com/kyverno/policy-reporter/pkg/crd/client/clientset/versioned/typed/policyreport/v1alpha2"
+	"github.com/kyverno/policy-reporter/pkg/crd/client/policyreport/clientset/versioned/fake"
+	v1alpha2client "github.com/kyverno/policy-reporter/pkg/crd/client/policyreport/clientset/versioned/typed/policyreport/v1alpha2"
 	"github.com/kyverno/policy-reporter/pkg/email"
 	"github.com/kyverno/policy-reporter/pkg/validate"
 )
 
 var (
-	filter = email.NewFilter(validate.RuleSets{}, validate.RuleSets{})
+	filter = email.NewFilter(nil, validate.RuleSets{}, validate.RuleSets{})
 	logger = zap.NewNop()
 )
 

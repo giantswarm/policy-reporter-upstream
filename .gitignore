@@ -4,9 +4,12 @@
 /config.yaml
 build
 /test.yaml
-**/test.db
-sqlite-database*.db
-values.yaml
-coverage.out
+*.db
+values*.yaml
+monitoring.yaml
+coverage.out*
 heap*
 /.env*
+.tools
+/.idea/
+.gopath

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -38,7 +39,7 @@ func Test_CreateReport(t *testing.T) {
 
 	fmt.Println(path)
 
-	reporter := summary.NewReporter("../../../templates", "Cluster")
+	reporter := summary.NewReporter("../../../templates", "Cluster", "Report")
 	report, err := reporter.Report(data, "html")
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
@@ -49,6 +50,10 @@ func Test_CreateReport(t *testing.T) {
 	}
 	if report.ClusterName != "Cluster" {
 		t.Fatal("expected clustername to be set")
+	}
+	expected := "Report (summary) on Cluster from " + time.Now().Format("2006-01-02")
+	if report.Title != expected {
+		t.Fatalf("expected title to be '%s', got %s", expected, report.Title)
 	}
 	if report.Format != "html" {
 		t.Fatal("expected format to be set")

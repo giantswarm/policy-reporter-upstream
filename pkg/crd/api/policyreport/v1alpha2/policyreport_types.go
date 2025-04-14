@@ -14,6 +14,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/segmentio/fasthash/fnv1a"
@@ -64,6 +65,16 @@ func (r *PolicyReport) GetResults() []PolicyReportResult {
 	return r.Results
 }
 
+func (r *PolicyReport) HasResult(id string) bool {
+	for _, r := range r.Results {
+		if r.GetID() == id {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (r *PolicyReport) SetResults(results []PolicyReportResult) {
 	r.Results = results
 }
@@ -81,6 +92,10 @@ func (r *PolicyReport) GetSource() string {
 }
 
 func (r *PolicyReport) GetKinds() []string {
+	if r.GetScope() != nil {
+		return []string{r.Scope.Kind}
+	}
+
 	list := make([]string, 0)
 	for _, k := range r.Results {
 		if !k.HasResource() {
@@ -119,6 +134,10 @@ func (r *PolicyReport) GetID() string {
 	h1 = fnv1a.AddString64(h1, r.GetNamespace())
 
 	return strconv.FormatUint(h1, 10)
+}
+
+func (r *PolicyReport) GetKey() string {
+	return fmt.Sprintf("%s/%s", r.Namespace, r.Name)
 }
 
 func (r *PolicyReport) GetScope() *corev1.ObjectReference {

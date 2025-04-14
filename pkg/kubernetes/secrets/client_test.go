@@ -25,14 +25,16 @@ func newFakeClient() v1.SecretInterface {
 			"host":            []byte("http://localhost:9200"),
 			"username":        []byte("username"),
 			"password":        []byte("password"),
+			"apiKey":          []byte("apiKey"),
 			"webhook":         []byte("http://localhost:9200/webhook"),
-			"accessKeyID":     []byte("accessKeyID"),
+			"accessKeyId":     []byte("accessKeyId"),
 			"secretAccessKey": []byte("secretAccessKey"),
 			"kmsKeyId":        []byte("kmsKeyId"),
 			"token":           []byte("token"),
-			"accountID":       []byte("accountID"),
+			"accountId":       []byte("accountId"),
 			"database":        []byte("database"),
 			"dsn":             []byte("dsn"),
+			"typelessApi":     []byte("false"),
 		},
 	}).CoreV1().Secrets("default")
 }
@@ -62,7 +64,11 @@ func Test_Client(t *testing.T) {
 			t.Errorf("Unexpected Password: %s", values.Password)
 		}
 
-		if values.AccessKeyID != "accessKeyID" {
+		if values.APIKey != "apiKey" {
+			t.Errorf("Unexpected ApiKey: %s", values.APIKey)
+		}
+
+		if values.AccessKeyID != "accessKeyId" {
 			t.Errorf("Unexpected AccessKeyID: %s", values.AccessKeyID)
 		}
 
@@ -78,8 +84,8 @@ func Test_Client(t *testing.T) {
 			t.Errorf("Unexpected KmsKeyId: %s", values.KmsKeyID)
 		}
 
-		if values.AccountID != "accountID" {
-			t.Errorf("Unexpected AccountID: %s", values.AccountID)
+		if values.AccountID != "accountId" {
+			t.Errorf("Unexpected accountId: %s", values.AccountID)
 		}
 
 		if values.Database != "database" {
@@ -88,6 +94,10 @@ func Test_Client(t *testing.T) {
 
 		if values.DSN != "dsn" {
 			t.Errorf("Unexpected DSN: %s", values.DSN)
+		}
+
+		if values.TypelessAPI {
+			t.Errorf("Unexpected TypelessAPI: %t", values.TypelessAPI)
 		}
 	})
 

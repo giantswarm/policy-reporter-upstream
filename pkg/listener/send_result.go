@@ -12,18 +12,19 @@ import (
 
 const SendResults = "send_results_listener"
 
-func NewSendResultListener(clients []target.Client, mapper report.Mapper) report.PolicyReportResultListener {
+func NewSendResultListener(targets *target.Collection) report.PolicyReportResultListener {
 	return func(rep v1alpha2.ReportInterface, r v1alpha2.PolicyReportResult, e bool) {
+		clients := targets.SingleSendClients()
+		if len(clients) == 0 {
+			return
+		}
+
 		wg := &sync.WaitGroup{}
 		wg.Add(len(clients))
 
 		for _, t := range clients {
 			go func(target target.Client, re v1alpha2.ReportInterface, result v1alpha2.PolicyReportResult, preExisted bool) {
 				defer wg.Done()
-
-				if result.Result == v1alpha2.StatusFail {
-					result.Priority = mapper.ResolvePriority(result.Policy, result.Severity)
-				}
 
 				if !result.HasResource() && re.GetScope() != nil {
 					result.Resources = []corev1.ObjectReference{*re.GetScope()}
